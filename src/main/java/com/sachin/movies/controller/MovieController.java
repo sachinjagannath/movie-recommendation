@@ -69,4 +69,17 @@ public class MovieController {
     public ResponseEntity<List<MovieResponse>> recommendByYear(@RequestParam int year){
         return ResponseEntity.ok(movieService.recommendYear(year));
     }
+
+      /**
+     * GET /api/movies/recommend/user-rated?minRating=7.0
+     * NEW — recommends movies based on average USER review rating.
+     * Only movies with at least one review are returned.
+     */
+
+      @GetMapping("/recommend/user-rated")
+      public ResponseEntity<List<MovieResponse>> recommendByUserRating(
+        @RequestParam(defaultValue = "7.0") double minRating
+      ){
+        return ResponseEntity.ok(movieService.recommendByUserRating(minRating));
+      }
 }

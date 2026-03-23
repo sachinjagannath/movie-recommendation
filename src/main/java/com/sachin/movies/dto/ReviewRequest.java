@@ -10,7 +10,7 @@ public record ReviewRequest(
 
     @Min(value = 1, message = "Rating must be at least 1")
     @Max(value = 10, message = "Rating must be at most 10")
-    int review,
+    int rating,
     
     // Comment is optional — a user might just leave a star rating
     String comment

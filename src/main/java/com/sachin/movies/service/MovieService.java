@@ -8,6 +8,7 @@ import com.sachin.movies.dto.MovieRequest;
 import com.sachin.movies.dto.MovieResponse;
 import com.sachin.movies.model.Movie;
 import com.sachin.movies.repository.MovieRepository;
+import com.sachin.movies.repository.ReviewRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MovieService {
     private final MovieRepository movieRepository;
+    private final ReviewRepository reviewRepository;
 
     // CRUD
     public MovieResponse addMovie(MovieRequest request){
@@ -47,6 +49,7 @@ public class MovieService {
     public void deleteMovie(Long id){
         findOrThrow(id);
         movieRepository.deleteById(id);
+        // cascade = ALL on Movie.reviews means all reviews are deleted automatically
     }
 
     //---- RECOMMENDATIONS
@@ -72,6 +75,17 @@ public class MovieService {
             .toList();
     }
 
+        /**
+     * Recommend movies where the average USER REVIEW rating is >= minRating.
+     * Only movies that actually have reviews are included.
+     */
+    public List<MovieResponse> recommendByUserRating(double minRating) {
+        return movieRepository.findByAverageUserRatingGreaterThanEqual(minRating)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     //---------Helpers
 
     private Movie findOrThrow(Long id){
@@ -89,13 +103,30 @@ public class MovieService {
         .build();
     }
 
+   /**
+     * Converts a Movie entity → MovieResponse DTO.
+     * Calculates average user rating and total review count from the ReviewRepository.
+     * These are lightweight aggregate queries — not loading all review objects into memory.
+     */
     private MovieResponse toResponse(Movie movie){
+
+        Double avgUserRating = reviewRepository.findAverageRatingByMovieId(movie.getId())
+                                                .orElse(null); // null when there are no values
+
+        long totalReviews = reviewRepository.countcountByMovieId(movie.getId());
+
+
         return new MovieResponse(
             movie.getId(),
             movie.getTitle(),
             movie.getGenre(),
             movie.getReleaseYear(),
             movie.getRating(),
-            movie.getDescription());
+            movie.getDescription(),
+            avgUserRating != null
+                        ? Math.round(avgUserRating * 10.0) / 10.0  // round to 1 decimal
+                        : null,
+                totalReviews
+            );
     }
 }
